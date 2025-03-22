@@ -1,54 +1,188 @@
-<header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zevar Collection – Jewellery Price Guide</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #ffefba, #ffffff);
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border: 3px solid gold;
+        }
+        h2 {
+            text-align: center;
+            font-weight: 600;
+            color: #b8860b;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: gold;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: darkgoldenrod;
+            color: white;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: #fff8dc;
+            border-radius: 5px;
+        }
+        #scanner {
+            margin-top: 10px;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Zevar Collection – Jewellery Price Guide</h2>
 
-<!--
-  <<< Author notes: Course header >>>
-  Include a 1280×640 image, course title in sentence case, and a concise description in emphasis.
-  In your repository settings: enable template repository, add your 1280×640 social image, auto delete head branches.
-  Add your open source license, GitHub uses MIT license.
--->
+        <label>Live Rate (per 10 gm in ₹):</label>
+        <input type="number" id="liveRate" placeholder="Enter or scan rate">
+        <button onclick="startCamera('liveRate')">📷 Scan Rate</button>
 
-# GitHub Pages
+        <label>Weight (in grams):</label>
+        <input type="number" id="weight" placeholder="Enter or scan weight">
+        <button onclick="startCamera('weight')">📷 Scan Weight</button>
 
-_Create a site or blog from your GitHub repositories with GitHub Pages._
+        <label>Karat:</label>
+        <select id="karat">
+            <option value="22">22K (91.6%)</option>
+            <option value="18">18K (75%)</option>
+        </select>
 
-</header>
+        <label>Making Charge per gram:</label>
+        <input type="number" id="makingCharge" value="999">
 
-<!--
-  <<< Author notes: Step 1 >>>
-  Choose 3-5 steps for your course.
-  The first step is always the hardest, so pick something easy!
-  Link to docs.github.com for further explanations.
-  Encourage users to open new tabs for steps!
--->
+        <label>Discount on Making Charge (%):</label>
+        <input type="number" id="discount" placeholder="Enter discount %" value="0">
 
-## Step 1: Enable GitHub Pages
+        <label>GST (%):</label>
+        <input type="number" id="gst" value="3">
 
-_Welcome to GitHub Pages and Jekyll :tada:!_
+        <button onclick="calculatePrice()">Calculate Price</button>
+        <div id="result"></div>
 
-The first step is to enable GitHub Pages on this [repository](https://docs.github.com/en/get-started/quickstart/github-glossary#repository). When you enable GitHub Pages on a repository, GitHub takes the content that's on the main branch and publishes a website based on its contents.
+        <div id="scanner" style="display: none;">
+            <video id="video" autoplay></video>
+            <button onclick="captureImage()">📸 Capture</button>
+            <canvas id="canvas" style="display: none;"></canvas>
+        </div>
+    </div>
 
-### :keyboard: Activity: Enable GitHub Pages
+    <script>
+        let currentField = "";
 
-1. Open a new browser tab, and work on the steps in your second tab while you read the instructions in this tab.
-1. Under your repository name, click **Settings**.
-1. Click **Pages** in the **Code and automation** section.
-1. Ensure "Deploy from a branch" is selected from the **Source** drop-down menu, and then select `main` from the **Branch** drop-down menu.
-1. Click the **Save** button.
-1. Wait about _one minute_ then refresh this page (the one you're following instructions from). [GitHub Actions](https://docs.github.com/en/actions) will automatically update to the next step.
-   > Turning on GitHub Pages creates a deployment of your repository. GitHub Actions may take up to a minute to respond while waiting for the deployment. Future steps will be about 20 seconds; this step is slower.
-   > **Note**: In the **Pages** of **Settings**, the **Visit site** button will appear at the top. Click the button to see your GitHub Pages site.
+        function startCamera(field) {
+            currentField = field;
+            document.getElementById("scanner").style.display = "block";
+            let video = document.getElementById("video");
 
-<footer>
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                video.srcObject = stream;
+            });
+        }
 
-<!--
-  <<< Author notes: Footer >>>
-  Add a link to get support, GitHub status page, code of conduct, license link.
--->
+        function captureImage() {
+            let video = document.getElementById("video");
+            let canvas = document.getElementById("canvas");
+            let context = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
----
+            let imageData = canvas.toDataURL("image/png");
 
-Get help: [Post in our discussion board](https://github.com/orgs/skills/discussions/categories/github-pages) &bull; [Review the GitHub status page](https://www.githubstatus.com/)
+            Tesseract.recognize(
+                imageData,
+                'eng',
+                { logger: (m) => console.log(m) }
+            ).then(({ data: { text } }) => {
+                let extractedText = text.replace(/\D/g, ''); // Extract only numbers
+                document.getElementById(currentField).value = extractedText;
+                stopCamera();
+            });
+        }
 
-&copy; 2023 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
+        function stopCamera() {
+            let video = document.getElementById("video");
+            let stream = video.srcObject;
+            if (stream) {
+                let tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+            document.getElementById("scanner").style.display = "none";
+        }
 
-</footer>
+        function calculatePrice() {
+            let liveRatePer10gm = parseFloat(document.getElementById("liveRate").value);
+            let weight = parseFloat(document.getElementById("weight").value);
+            let karat = parseFloat(document.getElementById("karat").value);
+            let makingCharge = parseFloat(document.getElementById("makingCharge").value);
+            let discount = parseFloat(document.getElementById("discount").value);
+            let gst = parseFloat(document.getElementById("gst").value);
+
+            if (isNaN(liveRatePer10gm) || isNaN(weight) || isNaN(gst) || isNaN(discount)) {
+                document.getElementById("result").innerHTML = "Please enter all values correctly.";
+                return;
+            }
+
+            let liveRatePerGram = liveRatePer10gm / 10;
+            let purityFactor = karat / 24;
+            let basePrice = weight * liveRatePerGram * purityFactor;
+            let makingCost = weight * makingCharge;
+            let discountAmount = (makingCost * discount) / 100;
+            let finalMakingCharge = makingCost - discountAmount;
+
+            let subtotal = basePrice + finalMakingCharge;
+            let gstAmount = (subtotal * gst) / 100;
+            let finalPrice = subtotal + gstAmount;
+
+            document.getElementById("result").innerHTML = `
+                <strong>Gold Value: ₹${basePrice.toFixed(2)}</strong><br>
+                Making Charges: ₹${makingCost.toFixed(2)}<br>
+                Discount: ₹${discountAmount.toFixed(2)}<br>
+                GST (${gst}%): ₹${gstAmount.toFixed(2)}<br>
+                <strong>Final Price: ₹${finalPrice.toFixed(2)}</strong>
+            `;
+        }
+    </script>
+</body>
+</html>
